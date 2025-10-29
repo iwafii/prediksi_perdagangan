@@ -68,15 +68,56 @@ st.markdown("Deployment model SARIMA untuk memprediksi Ekspor, Impor, dan Neraca
 # Muat data historis di awal
 historical_df = load_historical_data('Data_Gabungan_Ekspor_Impor_Tahun2012-2025.csv')
 
+# --- [BAGIAN BARU] Analisis Data Historis (Per Tahun) ---
+st.markdown("---") # Garis pemisah
+st.subheader("Analisis Data Historis")
+
+if historical_df is not None:
+    # Buat daftar tahun dari index, tambahkan "Semua Tahun"
+    years = ['Semua Tahun'] + sorted(historical_df.index.year.unique().tolist(), reverse=True)
+    selected_year = st.selectbox('Pilih Tahun untuk Dianalisis:', years)
+
+    if selected_year == 'Semua Tahun':
+        data_to_display = historical_df
+    else:
+        # Filter DataFrame berdasarkan tahun yang dipilih
+        data_to_display = historical_df[historical_df.index.year == selected_year]
+
+    # Plot data yang dipilih
+    st.write(f"Menampilkan data untuk: **{selected_year}**")
+    
+    # Plot 1: Ekspor vs Impor (Historis)
+    fig_hist_1 = go.Figure()
+    fig_hist_1.add_trace(go.Scatter(x=data_to_display.index, y=data_to_display['Total_Ekspor'], mode='lines+markers', name='Ekspor Aktual', line=dict(color='blue')))
+    fig_hist_1.add_trace(go.Scatter(x=data_to_display.index, y=data_to_display['Total_Impor'], mode='lines+markers', name='Impor Aktual', line=dict(color='red')))
+    fig_hist_1.update_layout(title='Historis Ekspor (Biru) vs Impor (Merah)', yaxis_title='Juta USD')
+    st.plotly_chart(fig_hist_1, use_container_width=True)
+    
+    # Plot 2: Neraca Perdagangan (Historis)
+    fig_hist_2 = go.Figure()
+    fig_hist_2.add_trace(go.Scatter(x=data_to_display.index, y=data_to_display['Neraca_Perdagangan'], mode='lines+markers', name='Neraca Aktual', line=dict(color='green')))
+    fig_hist_2.add_hline(y=0, line_dash="dot", line_color="black") # Garis nol
+    fig_hist_2.update_layout(title='Historis Neraca Perdagangan (Hijau)', yaxis_title='Juta USD')
+    st.plotly_chart(fig_hist_2, use_container_width=True)
+    
+    # Tampilkan tabel data
+    st.write(f"Data Tabel untuk: **{selected_year}**")
+    st.dataframe(data_to_display.style.format("{:,.2f} Juta USD"))
+
+else:
+    st.error("Gagal memuat data historis. Fitur analisis tidak tersedia.")
+
+st.markdown("---") # Garis pemisah
+
 # Sidebar untuk Input Pengguna
 st.sidebar.header('Panel Kontrol')
 
 bulan_prediksi = st.sidebar.slider(
     'Pilih jumlah bulan untuk diprediksi:',
-    min_value=6,
-    max_value=36,
-    value=12,
-    step=1
+    min_value=6,          # Minimal 6 bulan
+    max_value=60,        # Maksimal 60 bulan (5 TAHUN)
+    value=12,           # Nilai default 24 bulan (2 TAHUN)
+    step=6              # Kelipatan 6 bulan (agar slider tidak terlalu penuh)
 )
 
 st.sidebar.markdown("---")
